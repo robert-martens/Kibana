@@ -105,10 +105,14 @@ margin: 4px;
 
 #queryinput {
 width: 35%;
+font-size: 8pt;
+color: #333;
 }
 
 #timefrom, #timeto {
 width: 130px;
+font-size: 8pt;
+color: #333;
 }
 
 #feedlinks {
