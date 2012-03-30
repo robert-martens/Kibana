@@ -770,72 +770,71 @@ function addCommas(nStr) {
 
 // Render the date/time picker
 function renderDateTimePicker(from, to) {
-    var maxDateTime = new Date();
-    // set to midnight of current day
-    maxDateTime.setHours(23,59,59,999);
+  var maxDateTime = new Date();
+  // set to midnight of current day
+  maxDateTime.setHours(23,59,59,999);
 
-    $('#timeto').val(ISODateString(to));
-    $('#timefrom').val(ISODateString(from));
+  $('#timeto').val(ISODateString(to));
+  $('#timefrom').val(ISODateString(from));
 
-    $('#timefrom').datetimepicker({
-      showSecond: true,
-      timeFormat: 'hh:mm:ss',
-      dateFormat: 'yy-mm-dd',
-      separator: 'T',
-      maxDate: maxDateTime,
-      maxDateTime: maxDateTime,
-      onSelect: function (dateText, inst) {
-        // Work arround bug: /jQuery-Timepicker-Addon/issues/302
-        if ($('#timeto').val() != '') {
-          $('#timeto').datetimepicker('setDate',
-            $('#timeto').val());
-        }
-        var tFrom = $(this).datetimepicker('getDate').getTime();
-        var tTo = $('#timeto').datetimepicker('getDate').getTime();
-        var now = new Date().getTime();
-        if (tFrom > now-(1000*60)) {
-          // set timeto to now and timefrom to now - 1 min
-          $('#timeto').datetimepicker('setDate', (new Date(now)));
-          $('#timefrom').datetimepicker('setDate',
-            (new Date(now-60*1000)));
-        } else if (tFrom > tTo-(1000*60)) {
-          // set timeto to min(now, timefrom + 15 min)
-          $('#timeto').datetimepicker('setDate',
-            (new Date(Math.min(now, tFrom+(15*60*1000)))));
-        }
-        $('#timeinput').val('custom');
-        window.hashjson.timeframe = "custom";
+  $('#timefrom').datetimepicker({
+    showSecond: true,
+    timeFormat: 'hh:mm:ss',
+    dateFormat: 'yy-mm-dd',
+    separator: 'T',
+    maxDate: maxDateTime,
+    maxDateTime: maxDateTime,
+    onSelect: function (dateText, inst) {
+      // Work arround bug: /jQuery-Timepicker-Addon/issues/302
+      if ($('#timeto').val() != '') {
+        $('#timeto').datetimepicker('setDate',
+          $('#timeto').val());
       }
-    });
-
-    $('#timeto').datetimepicker({
-      showSecond: true,
-      timeFormat: 'hh:mm:ss',
-      dateFormat: 'yy-mm-dd',
-      separator: 'T',
-      maxDate: maxDateTime,
-      maxDateTime: maxDateTime,
-      onSelect: function (dateText, inst) {
-        if ($('#timefrom').val() != '') {
-          $('#timefrom').datetimepicker('setDate',
-            $('#timefrom').val());
-        }
-        var tTo = $(this).datetimepicker('getDate').getTime();
-        var tFrom = $('#timefrom').datetimepicker('getDate').getTime();
-        var now = new Date().getTime();
-        if (tTo > now) {
-          // set timeto to now
-          $('#timeto').datetimepicker('setDate', (new Date(now)));
-        } else if (tFrom > tTo) {
-          // set timefrom to timeto - 15 min
-          $('#timefrom').datetimepicker('setDate',
-            (new Date(tTo-15*60*1000)));
-        }
-        $('#timeinput').val('custom');
-        window.hashjson.timeframe = "custom";
+      var tFrom = $(this).datetimepicker('getDate').getTime();
+      var tTo = $('#timeto').datetimepicker('getDate').getTime();
+      var now = new Date().getTime();
+      if (tFrom > now-(1000*60)) {
+        // set timeto to now and timefrom to now - 1 min
+        $('#timeto').datetimepicker('setDate', (new Date(now)));
+        $('#timefrom').datetimepicker('setDate',
+          (new Date(now-60*1000)));
+      } else if (tFrom > tTo-(1000*60)) {
+        // set timeto to min(now, timefrom + 15 min)
+        $('#timeto').datetimepicker('setDate',
+          (new Date(Math.min(now, tFrom+(15*60*1000)))));
       }
-    });
-  }
+      $('#timeinput').val('custom');
+      window.hashjson.timeframe = "custom";
+    }
+  });
+
+  $('#timeto').datetimepicker({
+    showSecond: true,
+    timeFormat: 'hh:mm:ss',
+    dateFormat: 'yy-mm-dd',
+    separator: 'T',
+    maxDate: maxDateTime,
+    maxDateTime: maxDateTime,
+    onSelect: function (dateText, inst) {
+      if ($('#timefrom').val() != '') {
+        $('#timefrom').datetimepicker('setDate',
+          $('#timefrom').val());
+      }
+      var tTo = $(this).datetimepicker('getDate').getTime();
+      var tFrom = $('#timefrom').datetimepicker('getDate').getTime();
+      var now = new Date().getTime();
+      if (tTo > now) {
+        // set timeto to now
+        $('#timeto').datetimepicker('setDate', (new Date(now)));
+      } else if (tFrom > tTo) {
+        // set timefrom to timeto - 15 min
+        $('#timefrom').datetimepicker('setDate',
+          (new Date(tTo-15*60*1000)));
+      }
+      $('#timeinput').val('custom');
+      window.hashjson.timeframe = "custom";
+    }
+  });
 }
 
 
