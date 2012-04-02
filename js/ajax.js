@@ -231,19 +231,19 @@ function getPage() {
           pageLinks();
 
         } else {
-          // blank out the graph. XXX: Does nothing?
-          //getGraph(resultjson.graph.interval,'graph');
+          // blank out the graph.
+          getGraph(resultjson.graph.interval,'graph');
 
           showError('No logs matched',"Sorry, I couldn't find anything for that " +
             "query. Double check your spelling and syntax.");
 
-          // Draw custom time selection pickers. XXX: Does nothing?
-          //if(typeof window.hashjson.time !== 'undefined') {
-          //  renderDateTimePicker(
-          //    Date.parse(window.hashjson.time.from) + window.tOffset,
-          //    Date.parse(window.hashjson.time.to) + window.tOffset
-          //  );
-          //}
+          // Draw custom time selection pickers.
+          if(typeof window.hashjson.time !== 'undefined') {
+            renderDateTimePicker(
+              Date.parse(window.hashjson.time.from) + window.tOffset,
+              Date.parse(window.hashjson.time.to) + window.tOffset
+            );
+          }
         }
 
         // Populate meta data
