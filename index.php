@@ -14,7 +14,6 @@
   <script type="text/javascript" src="js/lib/iso8601.min.js"></script>
   <script type="text/javascript" src="js/lib/base64.js"></script>
   <script type="text/javascript" src="js/lib/jquery-ui-1.8.16.custom.min.js"></script>
-  <script type="text/javascript" src="js/lib/jquery.ui.datepicker.js"></script>
   <script type="text/javascript" src="js/lib/jquery-ui-timepicker-addon.js"></script>
   <script type="text/javascript" src="js/lib/jquery.ui.accordion.js"></script>
   <script type="text/javascript" src="js/lib/json2.js"></script>
@@ -26,7 +25,6 @@
   <link rel="stylesheet" href="bootstrap/css/bootstrap-responsive.min.css">
   <LINK REL=StyleSheet HREF="css/style.css" TYPE="text/css" MEDIA=screen>
   <LINK REL=StyleSheet HREF="css/jquery-ui-1.8.16.custom.css" TYPE="text/css" MEDIA=screen>
-  <LINK REL=StyleSheet HREF="css/jquery.ui.datepicker.css" TYPE="text/css" MEDIA=screen>
   <style type="text/css">
     body {
     padding-top: 65px;
