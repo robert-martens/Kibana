@@ -1,3 +1,21 @@
+<?php
+if (!defined('KIBANA_CONFIG_FILE')) {
+  // KIBANA_CONFIG_FILE is the path to the file that defines the
+  // $KIBANA_CONFIG configuration array.
+  // The default value will look for the file in the same directory as this
+  // script.
+
+  // allow overriding the config file via an environment variable.
+  $config_path = getenv('KIBANA_CONFIG_FILE');
+  if (empty($config_path)) {
+    $config_path = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'config.php';
+  }
+
+  define('KIBANA_CONFIG_FILE', $config_path);
+}
+require_once KIBANA_CONFIG_FILE;
+?>
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
@@ -5,34 +23,38 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Kibana</title>
-  <script type="text/javascript" src="js/lib/excanvas.min.js"></script>
-  <script type="text/javascript" src="js/lib/jquery.min.js"></script>
-  <script type="text/javascript" src="js/lib/jquery.history.js"></script>
-  <script type="text/javascript" src="js/lib/jquery.flot.min.js"></script>
-  <script type="text/javascript" src="js/lib/jquery.flot.selection.min.js"></script>
-  <script type="text/javascript" src="js/lib/jquery.smartresize.js"></script>
-  <script type="text/javascript" src="js/lib/iso8601.min.js"></script>
-  <script type="text/javascript" src="js/lib/base64.js"></script>
-  <script type="text/javascript" src="js/lib/jquery-ui-1.8.16.custom.min.js"></script>
-  <script type="text/javascript" src="js/lib/jquery-ui-timepicker-addon.js"></script>
-  <script type="text/javascript" src="js/lib/jquery.ui.accordion.js"></script>
-  <script type="text/javascript" src="js/lib/json2.js"></script>
-  <script type="text/javascript" src="js/ajax.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/excanvas.min.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery.min.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery.history.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery.flot.min.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery.flot.selection.min.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery.smartresize.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/iso8601.min.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/base64.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery-ui-1.8.16.custom.min.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery-ui-timepicker-addon.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/jquery.ui.accordion.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/lib/json2.js"></script>
+  <script type="text/javascript">
+      var APP = {
+        path: <?php echo json_encode($KIBANA_CONFIG['app_path']) ?>
+      };
+    </script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>js/ajax.js"></script>
 
-  <script type="text/javascript" src="bootstrap/js/bootstrap.js"></script>
-  <script type="text/javascript" src="bootstrap/js/bootstrap-dropdown.js"></script>
-  <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
-  <link rel="stylesheet" href="bootstrap/css/bootstrap-responsive.min.css">
-  <LINK REL=StyleSheet HREF="css/style.css" TYPE="text/css" MEDIA=screen>
-  <LINK REL=StyleSheet HREF="css/jquery-ui-1.8.16.custom.css" TYPE="text/css" MEDIA=screen>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/js/bootstrap.js"></script>
+  <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/js/bootstrap-dropdown.js"></script>
+  <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/css/bootstrap-responsive.min.css">
+  <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>css/style.css">
+  <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>css/jquery-ui-1.8.16.custom.css">
   <style type="text/css">
     body {
     padding-top: 65px;
     padding-bottom: 40px;
     }
-
   </style>
-  <link href="favicon.ico" rel="shortcut icon" type="image/x-icon" />
+  <link href="<?php echo $KIBANA_CONFIG['app_path'] ?>favicon.ico" rel="shortcut icon" type="image/x-icon" />
 
 </head>
 
@@ -90,10 +112,10 @@
       <p id=graphheader></p>
       <div id=graph style='height: 100px;'>
         <div class=hero-unit>
-          <h1><img src=images/kibana_banner.png></h1>
-          <br><br>
-          <p><strong>Welcome to Kibana.</strong> Give me a few moments, I'm fetching some interesting data to display. It might be a minute, there could be lots of data in here. Consider the thousands, millions or billions of events I might be looking through, to find just the right ones for you. It's nothing, really. You're welcome.
-          </p>
+        <h1><img src=<?php echo $KIBANA_CONFIG['app_path'] ?>images/kibana_banner.png></h1>
+        <br><br>
+        <p><strong>Welcome to Kibana.</strong> Give me a few moments, I'm fetching some interesting data to display. It might be a minute, there could be lots of data in here. Consider the thousands, millions or billions of events I might be looking through, to find just the right ones for you. It's nothing, really. You're welcome.
+        </p>
         </div>
       </div>
       <div id=legend></div>

@@ -4,6 +4,10 @@ $KIBANA_CONFIG = array(
   // Your elastic search server
   'elasticsearch_server' => "elasticsearch:9200",
 
+  // URL path to kibana. Apache users can safely leave this
+  // blank in most situations.
+  'app_path' => '',
+
   // The record type as defined in your logstash configuration.
   // Seperate multiple types with a comma, no spaces. Leave blank
   // for all.
