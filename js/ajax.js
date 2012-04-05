@@ -692,11 +692,6 @@ function viewLog(objid) {
 
 }
 
-function getLogField(objid, field) {
-  obj = window.resultjson.results[objid];
-  return obj[field];
-}
-
 function mSearch(field, value) {
   window.hashjson.mode = '';
   window.hashjson.analyze_field = '';
@@ -903,18 +898,20 @@ function logGraph(data, interval, metric) {
   // whatever is left. ie meangraph -> mean
   if (typeof metric === 'undefined')
     metric = 'count';
-
   metric = metric.replace('graph','');
   if (metric === '')
     metric = 'count';
 
   // Make sure we get results before calculating graph stuff
   if (!jQuery.isEmptyObject(data)) {
-    // Recreate the array, recalculating the time, gross.
+
     var array = new Array();
     if(typeof window.hashjson.time !== 'undefined') {
       // add null value at time from.
-      array.push(Array(Date.parse(window.hashjson.time.from) + window.tOffset, null));
+      if(window.hashjson.timeframe != 'all') {
+        array.push(Array(Date.parse(window.hashjson.time.from) + 
+          window.tOffset, null));
+      }
     }
     for (var index in data) {
       value = data[index][metric];
@@ -922,14 +919,10 @@ function logGraph(data, interval, metric) {
     }
     if(typeof window.hashjson.time !== 'undefined') {
       // add null value at time to.
-      array.push(Array(Date.parse(window.hashjson.time.to) + window.tOffset, null));
-      renderDateTimePicker(Date.parse(window.hashjson.time.from) + window.tOffset, 
-      Date.parse(window.hashjson.time.to) + window.tOffset);
-    } else {
-      var from = data[0].time + window.tOffset;
-      var to = data[data.length - 1].time + window.tOffset;
-      renderDateTimePicker(from, to);
+      array.push(Array(Date.parse(window.resultjson.time.to) + 
+        window.tOffset, null));
     }
+    renderDateTimePicker(array[0][0],array[array.length -1][0]);
 
     // Allow user to select ranges on graph.
     // Its this OR click, not both it seems.
@@ -1086,7 +1079,7 @@ function fromTime(range) {
         case '7 days':
             msago = 604800000; // 7*24*60*60*1000
             break;
-        case '100 years':
+        case 'all':
             msago = 3155760000000; // 100*365*24*60*60*1000 + 25*24*60*60*1000 (rounded up to nearest day)
             break;
     }

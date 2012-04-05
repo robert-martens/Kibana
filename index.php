@@ -65,7 +65,7 @@ require_once KIBANA_CONFIG_FILE;
     <div class="navbar-inner">
     <div class="container-fluid">
       <form id='searchform' class="form-search form-horizontal" action="">
-        <img src='images/logo.png'>
+        <img src='<?php echo $KIBANA_CONFIG['app_path'] ?>images/logo.png'>
         <select name="time" id=timeinput class="input-small">
           <option value="15 minutes">Last 15m</option>
           <option value="60 minutes">Last 60m</option>
@@ -74,7 +74,7 @@ require_once KIBANA_CONFIG_FILE;
           <option value="24 hours">Last 24h</option>
           <option value="48 hours">Last 48h</option>
           <option value="7 days">Last 7d</option>
-          <option value="100 years">All Time</option>
+          <option value="all">All Time</option>
           <option value="custom">Custom</option>
         </select>
         <input size=19 id=timefrom type=text name=timefrom value="" />
