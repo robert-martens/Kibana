@@ -51,13 +51,15 @@ $(document).ready(function () {
   // Handle AJAX errors
   $("div#logs").ajaxError(function (e, xhr, settings, exception) {
     $('#meta').text("");
-    showError("<strong>Oops!</strong> Something went terribly wrong.",
-      "I'm not totally sure what happened, but maybe refreshing, or "+
-      "hitting Reset will help. If that doesn't work, you can try "+
-      "restarting your browser. If all else fails, it possible your"+
-      " configuation has something funky going on. <br><br>If it helps,"+
-      " I received a <strong>" + xhr.status + " " + xhr.statusText +
-      "</strong> from: " + settings.url);
+    if(xhr.statusText != 'abort') {
+      showError("<strong>Oops!</strong> Something went terribly wrong.",
+        "I'm not totally sure what happened, but maybe refreshing, or "+
+        "hitting Reset will help. If that doesn't work, you can try "+
+        "restarting your browser. If all else fails, it possible your"+
+        " configuation has something funky going on. <br><br>If it helps,"+
+        " I received a <strong>" + xhr.status + " " + xhr.statusText +
+        "</strong> from: " + settings.url);
+    }
   });
 
   $('#sbctl').click(function () {
@@ -90,6 +92,11 @@ $(document).ready(function () {
 // cause a reload of the results
 
 function pageload(hash) {
+  if (typeof window.request !== 'undefined') {
+    window.request.abort();
+    delete window.segment;
+  }
+
   if (getcookie('username') != null)
     $('#dynamic_menu').html(
       '<a class="tab jlink" href="auth.php?logout">Logout</a>')
@@ -134,7 +141,7 @@ function getPage() {
   var data = 'page=' + sendhash;
 
   //Get the data and display it
-  request = $.ajax({
+  window.request = $.ajax({
     url: window.APP.path + "loader2.php",
     type: "GET",
     data: data,
@@ -149,7 +156,7 @@ function getPage() {
         //console.log(
         //  'curl -XGET \'http://elasticsearch:9200/'+resultjson.indices+
         //  '/_search?pretty=true\' -d\''+resultjson.elasticsearch_json+'\'');
-        //console.log(window.resultjson.graph);
+        // console.log(resultjson.debug);
 
         $('#graphheader,#graph').text("");
 
@@ -194,14 +201,17 @@ function getPage() {
           }
 
           $("#sidebar").delegate("li.analyze_btn a", "click", function () {
+            window.hashjson.offset = 0;
             analyzeField(
               $(this).parents().eq(2).children('a').text(), "analyze")});
 
           $("#sidebar").delegate("li.trend_btn a", "click",function () {
+            window.hashjson.offset = 0;
             analyzeField(
               $(this).parents().eq(2).children('a').text(), "trend")});
 
           $("#sidebar").delegate("li.stat_btn a", "click",function () {
+            window.hashjson.offset = 0;
             analyzeField(
               $(this).parents().eq(2).children('a').text(), "mean")});
 
@@ -214,11 +224,6 @@ function getPage() {
 
           $('.dropdown-toggle').dropdown();
 
-          // Create and populate graph
-          $('#graph').html(
-            '<center><br><p><img src=' + window.APP.path + 'images/barload.gif></center>');
-          getGraph(resultjson.graph.interval);
-
           // Create and populate #logs table
           $('#logs').html(CreateLogTable(
             window.resultjson.results, resultjson.fields_requested,
@@ -226,16 +231,23 @@ function getPage() {
           ));
           pageLinks();
 
+          // Populate hit and total
+          setMeta(window.resultjson.hits,window.resultjson.total,false);
+
+          // Create and populate graph
+          $('#graph').html(
+            '<center><br><p><img src=' + 
+            window.APP.path + 'images/barload.gif></center>');
+          getGraph(resultjson.graph.interval);
+
         } else {
-          showError('No logs matched',"Sorry, I couldn't find anything for that " +
-            "query. Double check your spelling and syntax.");
+          
+          // Populate hits and total
+          setMeta(window.resultjson.hits,window.resultjson.total,false);
+
+          showError('No logs matched',"Sorry, I couldn't find anything for " + 
+            "that query. Double check your spelling and syntax.");
         }
-
-        // Populate meta data
-        setMeta(window.resultjson.hits,window.resultjson.total,false);
-
-        // display the body with fadeIn transition
-        $('#logs').fadeIn('slow');
       }
     }
   });
@@ -247,11 +259,15 @@ function getGraph(interval) {
   //generate the parameter for the php script
   var sendhash = window.location.hash.replace(/^#/, '');
   var mode = window.hashjson.graphmode;
+  var segment = '';
+  if(typeof window.segment !== 'undefined')
+    segment = '&segment=' + window.segment;
 
-  var data = 'page=' + sendhash + "&mode="+mode+"graph&interval=" + interval;
+  var data = 'page=' + sendhash + "&mode="+mode+"graph&interval=" + 
+    interval + segment;
 
   //Get the data and display it
-  request = $.ajax({
+  window.request = $.ajax({
     url: window.APP.path + "loader2.php",
     type: "GET",
     data: data,
@@ -263,16 +279,37 @@ function getGraph(interval) {
 
         //Parse out the returned JSON
         var graphjson = JSON.parse(json);
-
-        window.graphdata = graphjson.graph.data
+        if ($(".legend").length > 0) {
+          window.graphdata = graphjson.graph.data.concat(window.graphdata);
+          window.graphhits = graphjson.hits + window.graphhits
+        } else {
+          window.graphdata = graphjson.graph.data
+          window.graphhits = graphjson.hits
+        }
         window.interval = graphjson.graph.interval
+        setMeta(window.graphhits,graphjson.total,false);
 
-        // Create and populate graph
+        // Display graph data
         logGraph(
-          graphjson.graph.data,
+          window.graphdata,
           window.interval,
-          window.hashjson.graphmode
-        );
+          window.hashjson.graphmode);
+
+        if (typeof graphjson.next !== 'undefined') {
+          window.segment = graphjson.next;
+          if (!($(".graphloading").length > 0)) {
+            $('div.legend table, div.legend table td').css({
+              "background-image": "url(" 
+                + window.APP.path + "images/barload.gif)",
+              "background-size":  "100% 100%"
+            });
+          }
+          getGraph(window.interval);
+        } else {
+          if(typeof window.segment !== 'undefined')
+            delete window.segment
+        }
+
       }
     }
   });
@@ -290,7 +327,7 @@ function getAnalysis() {
   var sendhash = window.location.hash.replace(/^#/, '');
   var data = 'page=' + sendhash + "&mode=" + window.hashjson.mode;
   //Get the data and display it
-  request = $.ajax({
+  window.request = $.ajax({
     url: window.APP.path + "loader2.php",
     type: "GET",
     data: data,
@@ -303,6 +340,9 @@ function getAnalysis() {
         var field = window.hashjson.analyze_field;
         var resultjson = JSON.parse(json);
         window.resultjson = resultjson;
+
+        $('.pagelinks').html('');
+        $('#fields').html('');
 
         if(window.resultjson.hits < 1) {
           if(window.resultjson.hits == 0) {
@@ -332,6 +372,8 @@ function getAnalysis() {
             setHash(window.hashjson);
           });
           return;
+        } else {
+          setMeta(resultjson.hits,resultjson.total,false);
         }
 
         switch (window.hashjson.mode) {
@@ -416,10 +458,6 @@ function getAnalysis() {
           window.hashjson.analyze_field = '';
           setHash(window.hashjson);
         });
-
-        $('.pagelinks').html('');
-        $('#fields').html('');
-        setMeta(resultjson.hits,resultjson.total,false);
       }
     }
   });
@@ -427,7 +465,8 @@ function getAnalysis() {
 
 function graphLoading() {
   $('#graph').html(
-    '<center><br><p><img src=' + window.APP.path + 'images/barload.gif></center>');
+    '<center><br><p><img src=' + window.APP.path + 
+    'images/barload.gif></center>');
 }
 
 function analysisTable(resultjson) {
@@ -487,7 +526,8 @@ function pageLinks() {
   }
   var end = window.hashjson.offset + window.resultjson.page_count;
   str += "<strong>" + window.hashjson.offset + " TO " + end + "</strong> ";
-  if (window.hashjson.offset + perpage < window.resultjson.hits) {
+  if (window.hashjson.offset + perpage <= end) 
+  {
     str += "<a class='nextpage jlink'>Next</a> ";
   }
   str += "</center>";
@@ -753,7 +793,7 @@ function feedLinks(obj) {
     "<a href=" + window.APP.path + "loader2.php?mode=csv&page=" +
     base64Encode(JSON.stringify(obj)) +
     ">export <img src=" + window.APP.path + "images/csv.gif></a> "+
-    "<a href=" + window.APP.path + "stream.html#" +
+    "<a href=" + window.APP.path + "stream.php#" +
     base64Encode(JSON.stringify(obj)) +
     ">stream <img src=" + window.APP.path + "images/stream.png></a>"
   return str;
@@ -822,7 +862,7 @@ function addCommas(nStr) {
 }
 
 // Render the date/time picker
-function renderDateTimePicker(from, to) {
+function renderDateTimePicker(from, to, force) {
   var maxDateTime = new Date();
   // set to midnight of current day
   maxDateTime.setHours(23,59,59,999);
@@ -906,23 +946,23 @@ function logGraph(data, interval, metric) {
   if (!jQuery.isEmptyObject(data)) {
 
     var array = new Array();
-    if(typeof window.hashjson.time !== 'undefined') {
+    if(typeof window.resultjson.time !== 'undefined') {
       // add null value at time from.
       if(window.hashjson.timeframe != 'all') {
-        array.push(Array(Date.parse(window.hashjson.time.from) + 
-          window.tOffset, null));
+        array.push(
+          Array(Date.parse(window.resultjson.time.from) + window.tOffset, null));
       }
     }
     for (var index in data) {
       value = data[index][metric];
       array.push(Array(data[index].time + window.tOffset, value));
     }
-    if(typeof window.hashjson.time !== 'undefined') {
+    if(typeof window.resultjson.time !== 'undefined') {
       // add null value at time to.
-      array.push(Array(Date.parse(window.resultjson.time.to) + 
-        window.tOffset, null));
+      array.push(
+        Array(Date.parse(window.resultjson.time.to) + window.tOffset, null));
     }
-    renderDateTimePicker(array[0][0],array[array.length -1][0]);
+    renderDateTimePicker(array[0][0],array[array.length -1][0],true);
 
     // Allow user to select ranges on graph.
     // Its this OR click, not both it seems.

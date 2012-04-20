@@ -103,7 +103,7 @@ class LogstashLoader {
           $req->{$key} = $default;
         }
       }
-
+      $req->segment = isset($_GET['segment'])? $_GET['segment']: '';
       $req->mode = isset($_GET['mode'])? $_GET['mode']: '';
       $req->interval = (isset($_GET['interval']))?
         self::roundInterval($_GET['interval']): 600000;
@@ -191,6 +191,8 @@ class LogstashLoader {
         break;
       case 'trend':
       case 'analyze':
+        $query->size = $this->config['analyze_limit'];
+        $query->fields = self::canonicalFieldName($req->analyze_field); 
         break;
       case 'mean':
         unset($query->sort);
@@ -228,35 +230,80 @@ class LogstashLoader {
     // After this, dates are in local timezone
     date_default_timezone_set($this->config['local_timezone']);
 
-    // Run the query
-    $result = $this->esQuery($query);
-
     // build the response
     $return = new stdClass;
 
-    // Add some top level statistical and informational data
-    $return->indices = $this->index;
-    $return->hits = $result->hits->total;
-    $return->time = $req->time;
-    if (isset($result->facets->histo1)) {
-      $return->graph->data = $result->facets->histo1->entries;
-    }
-    $return->total = $this->esTotalDocumentCount();
+    //Store original query size to slice with
+    $slice = $query->size;
 
+    // Run the query
     if (strpos($req->mode,'graph') !== false) {
+      $index_array = explode(',',$this->index);
+      if(sizeof($index_array) > 1) {
+        if($req->segment == '') {
+          $this->index  = $index_array[0];
+          $return->next = 1;
+        } else {
+          $this->index = $index_array[$req->segment];
+          if(sizeof($index_array) > $req->segment+1) {
+            $return->next = $req->segment + 1;
+          }
+        }
+      }
       $return->graph->interval = $req->interval;
     } else {
-      $return->graph->interval = (strtotime($req->time->to) -
-        strtotime($req->time->from)) * 10;
+      $return->graph->interval =
+        (strtotime($req->time->to) - strtotime($req->time->from)) * 10;
+    }
+
+    if($req->mode != 'mean' && strpos($req->mode,'graph') === false) {
+      $index_array = explode(',',$this->index);
+      $this->index = $index_array[0];
+      $result = $this->esQuery($query);
+      $return->hits = $result->hits->total;
+      $i = 1;
+      while($return->hits <= ($req->offset + $query->size) 
+        && $i < sizeof($index_array)) 
+      {
+        $query->size = $query->size - sizeof($result->hits->hits);
+        $return->debug[$i] = $query->size;
+        if(($query->size - $req->offset) < 0) {
+          $query->from = 0;
+        }
+        if ($req->offset > $return->hits) {
+          $query->from = $req->offset - $return->hits;
+        }
+        $this->index = $index_array[$i];
+        $result_tmp = $this->esQuery($query);
+        $return->hits = $return->hits + $result_tmp->hits->total;
+        $result->hits->hits = array_merge(
+          $result->hits->hits,$result_tmp->hits->hits);
+        $i++;
+      }
+    } else {
+      $result = $this->esQuery($query);
+      $return->hits = $result->hits->total;
+    }
+
+    // Add some top level statistical and informational data
+    $return->indices  = $this->index;
+    $return->hits     = $result->hits->total;
+    $return->time     = $req->time;
+    $return->total    = $this->esTotalDocumentCount();
+
+    if (isset($result->facets->histo1)) {
+      $return->graph->data = $result->facets->histo1->entries;
     }
 
     switch ($req->mode) {
       case 'analyze':
-        $return = $this->analyzeField($req, $query, $return);
+        $result->hits->hits = array_slice($result->hits->hits, 0, $slice);
+        $return = $this->analyzeField($req, $query, $return, $result);
         break;
 
       case 'trend':
-        $return = $this->trendField($req, $query, $return);
+        $result->hits->hits = array_slice($result->hits->hits, 0, $slice);
+        $return = $this->trendField($req, $query, $return, $result);
         break;
 
       case 'mean':
@@ -264,12 +311,13 @@ class LogstashLoader {
         break;
 
       default:
+        $result->hits->hits = array_slice($result->hits->hits, 0, $slice);
         $base_fields = array_values(array_unique(array_merge(
-            array('@message'),
-            $this->config['default_fields'])));
+          array('@message'),
+          $this->config['default_fields'])));
         $return->all_fields = array_values(array_unique(array_merge(
-            array('@message'),
-            $this->config['default_fields'])));
+          array('@message'),
+          $this->config['default_fields'])));
         $return->page_count = count($result->hits->hits);
         $i=0;
         foreach ($result->hits->hits as $hitkey => $hit) {
@@ -282,6 +330,8 @@ class LogstashLoader {
           $return->results[$hit_id]['@timestamp'] =
               $hit->fields->{'@timestamp'};
           foreach ($hit->fields->{'@fields'} as $name => $value) {
+            if (is_array($value))
+              $value = implode(',',$value);
             $return->results[$hit_id][$name] = $value;
             if (!in_array($name, $return->all_fields)) {
               $return->all_fields[] = $name;
@@ -290,7 +340,7 @@ class LogstashLoader {
 
           foreach ($base_fields as $field) {
             $return->results[$hit_id][$field] =
-                $hit->fields->{$field};
+              $hit->fields->{$field};
           }
           unset($result->hits->hits[$i]);
         }
@@ -440,13 +490,8 @@ class LogstashLoader {
    * @param object $return Partial response
    * @return object Response to request
    */
-  protected function analyzeField ($req, $query, $return) {
+  protected function analyzeField ($req, $query, $return, $result) {
     $field = self::canonicalFieldName($req->analyze_field);
-    $query->size = $this->config['analyze_limit'];
-    $query->fields = $field;
-
-    $result = $this->esQuery($query);
-
     $return->analysis->count = count($result->hits->hits);
 
     $analyze = self::collectFieldValues($result->hits->hits, $field);
@@ -476,11 +521,8 @@ class LogstashLoader {
    * @param object $return Partial response
    * @return object Response to request
    */
-  protected function trendField ($req, $query, $return) {
+  protected function trendField ($req, $query, $return, $result) {
     $field = self::canonicalFieldName($req->analyze_field);
-    $query->size = 0;
-    $query->fields = $field;
-    $result = $this->esQuery($query);
 
     // Scale samples. If analyze_limit is more than 50% of the
     // results, then change size to 50% of the results to avoid
@@ -576,11 +618,9 @@ class LogstashLoader {
     // Dates in this section are UTC
     $save_tz = date_default_timezone_get();
     date_default_timezone_set('UTC');
-
     $aryRange = array();
     $iDateFrom = strtotime(date("F j, Y", strtotime($strDateFrom)));
     $iDateTo = strtotime(date("F j, Y", strtotime($strDateTo)));
-
     if ($iDateTo >= $iDateFrom) {
       $aryRange[] = 'logstash-' . date('Y.m.d', $iDateFrom);
       while ($iDateFrom < $iDateTo) {
@@ -590,12 +630,12 @@ class LogstashLoader {
         }
       }
     }
-
+    
     $aryRange = array_intersect($aryRange, $this->getAllIndices());
     if (count($aryRange) > $this->config['smart_index_limit']) {
       $aryRange = array('_all');
     }
-    sort($aryRange);
+    rsort($aryRange);
 
     // back to default timezone
     date_default_timezone_set($save_tz);
@@ -615,7 +655,6 @@ class LogstashLoader {
     curl_setopt($ch, CURLOPT_URL,
         "http://{$this->config['elasticsearch_server']}/_status");
     $result = json_decode(curl_exec($ch));
-
     $indices = array();
     foreach ($result->indices as $indexname => $index) {
       $indices[] = $indexname;
