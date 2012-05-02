@@ -266,7 +266,6 @@ class LogstashLoader {
         && $i < sizeof($index_array)) 
       {
         $query->size = $query->size - sizeof($result->hits->hits);
-        $return->debug[$i] = $query->size;
         if(($query->size - $req->offset) < 0) {
           $query->from = 0;
         }
@@ -287,7 +286,6 @@ class LogstashLoader {
 
     // Add some top level statistical and informational data
     $return->indices  = $this->index;
-    $return->hits     = $result->hits->total;
     $return->time     = $req->time;
     $return->total    = $this->esTotalDocumentCount();
 
@@ -600,12 +598,16 @@ class LogstashLoader {
 
     $indices = $result->indices;
     $totaldocs = 0;
-    foreach ($indices as $index) {
-      $totaldocs += $index->docs->num_docs;
+    if ($this->config['default_index'] == "_all") {
+      foreach ($indices as $index) {
+        $totaldocs += $index->docs->num_docs;
+      }
+    } else {
+      $index = $this->config['default_index'];
+      $totaldocs = $indices->$index->docs->num_docs;
     }
     return $totaldocs;
   } //end esTotalDocumentCount
-
 
   /**
    * Get a list of all indices that fall within the given time range.
