@@ -45,7 +45,6 @@ require_once KIBANA_CONFIG_FILE;
   <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/js/bootstrap.js"></script>
   <script type="text/javascript" src="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/js/bootstrap-dropdown.js"></script>
   <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/css/bootstrap.min.css">
-  <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/css/bootstrap-responsive.min.css">
   <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>css/style.css">
   <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>css/jquery-ui-1.8.16.custom.css">
   <style type="text/css">
@@ -54,6 +53,7 @@ require_once KIBANA_CONFIG_FILE;
     padding-bottom: 40px;
     }
   </style>
+  <link rel="stylesheet" href="<?php echo $KIBANA_CONFIG['app_path'] ?>bootstrap/css/bootstrap-responsive.min.css">
   <link href="<?php echo $KIBANA_CONFIG['app_path'] ?>favicon.ico" rel="shortcut icon" type="image/x-icon" />
 
 </head>
